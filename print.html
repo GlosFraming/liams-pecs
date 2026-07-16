@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Print Cards</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.controls{background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.08);position:sticky;top:56px;z-index:8;margin-bottom:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{background:#e6edef;border:none;border-radius:20px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer}
+.chip.on{background:#2b6777;color:#fff}
+#sheet{background:#fff;border-radius:10px;padding:10mm;box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;flex-wrap:wrap;gap:4mm;align-content:flex-start}
+.slot{border:0.2mm solid #cfcfcf;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.slot img{width:100%;height:100%;object-fit:contain}
+#sheetWrap{overflow:auto}
+.emptyNote{color:#5a6b73;padding:30px;text-align:center;width:100%}
+@media print{
+  .topbar,.controls,.chooser,.hint,#sheetWrap>h3{display:none !important}
+  body{background:#fff}
+  .wrap{padding:0;max-width:none}
+  #sheet{box-shadow:none;border-radius:0;padding:0;gap:4mm}
+  .slot{border:0.2mm solid #d5d5d5;break-inside:avoid;page-break-inside:avoid}
+  @page{size:A4;margin:10mm}
+}
+</style>
+</head>
+<body>
+<div class="topbar"><a class="back" href="index.html">‹</a><h1>Print Cards</h1></div>
+<div class="wrap">
+
+  <div class="controls">
+    <div class="row">
+      <label class="fld">Size (cm)
+        <input type="number" id="size" value="5" min="2" max="10" step="0.5" style="width:90px">
+      </label>
+      <label class="toggle"><input type="checkbox" id="tBorder" checked> Black border</label>
+      <label class="toggle"><input type="checkbox" id="tLabel" checked> Show label</label>
+      <button class="btn" id="print">🖨️ Print / Save PDF</button>
+      <span class="hint" id="count">0 selected</span>
+      <button class="btn sec" id="clear">Clear</button>
+    </div>
+  </div>
+
+  <div id="sheetWrap">
+    <h3 class="sec">Sheet preview</h3>
+    <div id="sheet"><div class="emptyNote">Pick cards below to add them to the sheet.</div></div>
+  </div>
+
+  <div class="chooser">
+    <h3 class="sec">Choose cards</h3>
+    <input type="text" id="q" placeholder="Search…" style="width:100%;margin-bottom:8px">
+    <div class="chips" id="chips"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<script src="cards.js"></script>
+<script src="cardgen.js"></script>
+<script>
+let ALL=[], activeCat="All", term="";
+const selected=new Map();   // key -> card
+const $=id=>document.getElementById(id);
+const keyOf=c=>c.kind+"|"+c.category+"|"+c.name;
+
+function opts(){ return {border:$("tBorder").checked, showLabel:$("tLabel").checked, sizeCm:parseFloat($("size").value)||5}; }
+
+function renderChooser(){
+  const cats=["All"].concat(allCategories(ALL));
+  const chips=$("chips"); chips.innerHTML="";
+  cats.forEach(c=>{const b=document.createElement("button");b.className="chip"+(c===activeCat?" on":"");b.textContent=c==="All"?"All":c;b.onclick=()=>{activeCat=c;renderChooser();};chips.appendChild(b);});
+  let list=ALL.filter(c=>activeCat==="All"||c.category===activeCat);
+  if(term) list=list.filter(c=>(c.label+" "+c.category).toLowerCase().includes(term));
+  const g=$("grid"); g.innerHTML="";
+  list.forEach(c=>{
+    const d=document.createElement("div"); d.className="pcard"+(selected.has(keyOf(c))?" sel":"");
+    const img=document.createElement("img");
+    if(c.kind==="bundled") img.src=imgPath(c,"full");
+    else cardPhoto(c).then(p=>img.src=renderCard(p,c.label,{border:true,showLabel:true,size:260}).toDataURL());
+    d.appendChild(img);
+    const nm=document.createElement("div");nm.className="nm";nm.textContent=c.label;d.appendChild(nm);
+    const tk=document.createElement("div");tk.className="tick";tk.textContent="✓";d.appendChild(tk);
+    d.onclick=()=>{const k=keyOf(c); if(selected.has(k))selected.delete(k); else selected.set(k,c); d.classList.toggle("sel"); buildSheet();};
+    g.appendChild(d);
+  });
+}
+
+async function buildSheet(){
+  const o=opts();
+  $("count").textContent=selected.size+" selected";
+  const sheet=$("sheet");
+  if(!selected.size){ sheet.innerHTML="<div class='emptyNote'>Pick cards below to add them to the sheet.</div>"; return; }
+  sheet.innerHTML="";
+  const px=Math.max(360, Math.round(o.sizeCm*10*11)); // ~280 dpi render
+  for(const c of selected.values()){
+    const slot=document.createElement("div"); slot.className="slot";
+    slot.style.width=o.sizeCm+"cm"; slot.style.height=o.sizeCm+"cm";
+    const img=document.createElement("img");
+    const photo=await cardPhoto(c);
+    img.src=renderCard(photo, c.label, {border:o.border, showLabel:o.showLabel, size:px}).toDataURL();
+    slot.appendChild(img); sheet.appendChild(slot);
+  }
+}
+
+$("q").addEventListener("input",e=>{term=e.target.value.trim().toLowerCase();renderChooser();});
+["size","tBorder","tLabel"].forEach(id=>$(id).addEventListener("input",buildSheet));
+$("clear").addEventListener("click",()=>{selected.clear();renderChooser();buildSheet();});
+$("print").addEventListener("click",()=>{ if(!selected.size){alert("Pick some cards first.");return;} window.print(); });
+
+async function boot(){ ALL=await getAllCards(); renderChooser(); }
+boot();
+</script>
+</body>
+</html>

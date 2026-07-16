@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Card Library</title>
+<link rel="stylesheet" href="style.css">
+<style>
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+#modal .box{background:#fff;border-radius:16px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:18px}
+#modal h3{margin:2px 0 10px;color:#2b6777}
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.vgrid a{display:block;text-align:center;background:#f4f6f8;border-radius:10px;padding:8px;font-size:12px;font-weight:600;color:#3a4a52}
+.vgrid img{width:100%;height:100px;object-fit:contain}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+.chip{background:#e6edef;color:#20303a;border:none;border-radius:20px;padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer}
+.chip.on{background:#2b6777;color:#fff}
+</style>
+</head>
+<body>
+<div class="topbar"><a class="back" href="index.html">‹</a><h1>Card Library</h1></div>
+<div class="wrap">
+  <div class="searchbar">
+    <input type="text" id="q" placeholder="Search cards…" style="width:100%">
+    <div class="chips" id="chips"></div>
+  </div>
+  <div id="content"></div>
+</div>
+
+<div id="modal"><div class="box">
+  <h3 id="mtitle"></h3>
+  <div id="mbody"></div>
+  <div class="row" style="margin-top:12px"><button class="btn sec" onclick="closeModal()">Close</button><span id="mextra"></span></div>
+</div></div>
+
+<script src="cards.js"></script>
+<script src="cardgen.js"></script>
+<script>
+let ALL=[], activeCat="All", term="";
+const content=document.getElementById("content");
+
+function render(){
+  const cats=["All"].concat(allCategories(ALL));
+  const chips=document.getElementById("chips");
+  chips.innerHTML="";
+  cats.forEach(c=>{
+    const b=document.createElement("button");
+    b.className="chip"+(c===activeCat?" on":"");
+    b.textContent=c==="All"?("All ("+ALL.length+")"):c;
+    b.onclick=()=>{activeCat=c;render()};
+    chips.appendChild(b);
+  });
+  let list=ALL.filter(c=>(activeCat==="All"||c.category===activeCat));
+  if(term) list=list.filter(c=>(c.label+" "+c.category).toLowerCase().includes(term));
+  // group by category
+  const byCat={};
+  list.forEach(c=>{(byCat[c.category]=byCat[c.category]||[]).push(c)});
+  content.innerHTML="";
+  Object.keys(byCat).sort().forEach(cat=>{
+    const h=document.createElement("h3"); h.className="sec"; h.textContent=cat+" — "+byCat[cat].length;
+    content.appendChild(h);
+    const g=document.createElement("div"); g.className="grid";
+    byCat[cat].forEach(c=>g.appendChild(cardEl(c)));
+    content.appendChild(g);
+  });
+  if(!list.length) content.innerHTML="<p class='hint'>No cards match.</p>";
+}
+
+function cardEl(c){
+  const d=document.createElement("div"); d.className="pcard";
+  const img=document.createElement("img");
+  if(c.kind==="bundled"){ img.src=imgPath(c,"full"); }
+  else { img.alt=c.label; cardPhoto(c).then(p=>{img.src=renderCard(p,c.label,{border:true,showLabel:true,size:300}).toDataURL()}); }
+  d.appendChild(img);
+  const nm=document.createElement("div"); nm.className="nm"; nm.textContent=c.label; d.appendChild(nm);
+  if(c.kind==="user"){const b=document.createElement("span");b.className="badge";b.textContent="mine";d.appendChild(b);}
+  d.onclick=()=>openModal(c);
+  return d;
+}
+
+function openModal(c){
+  document.getElementById("mtitle").textContent=c.label+"  ·  "+c.category;
+  const body=document.getElementById("mbody");
+  const extra=document.getElementById("mextra"); extra.innerHTML="";
+  if(c.kind==="bundled"){
+    const vs=[["full","Border + label"],["no label","Border, no label"],["no border","No border"],["photo only","Picture only"],["clean","Clean re-typed"]];
+    body.innerHTML="<div class='vgrid'>"+vs.map(v=>{
+      const p=imgPath(c,v[0]);
+      return "<a href='"+p+"' target='_blank'><img src='"+p+"'><div>"+v[1]+"</div></a>";
+    }).join("")+"</div><p class='hint'>Tap a version to open it full-size (then long-press to save).</p>";
+  } else {
+    body.innerHTML="<p class='hint'>Card you made (stored on this tablet).</p><div id='uprev'></div>";
+    cardPhoto(c).then(p=>{document.getElementById("uprev").innerHTML="";
+      const cv=renderCard(p,c.label,{border:true,showLabel:true,size:420});
+      cv.style.maxWidth="240px"; document.getElementById("uprev").appendChild(cv);});
+    const del=document.createElement("button"); del.className="btn danger"; del.textContent="Delete";
+    del.onclick=async()=>{ if(confirm("Delete this card?")){ await deleteUserCard(c.id); closeModal(); boot(); } };
+    extra.appendChild(del);
+  }
+  document.getElementById("modal").style.display="flex";
+}
+function closeModal(){document.getElementById("modal").style.display="none";}
+document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal();});
+document.getElementById("q").addEventListener("input",e=>{term=e.target.value.trim().toLowerCase();render();});
+
+async function boot(){ ALL=await getAllCards(); render(); }
+boot();
+</script>
+</body>
+</html>

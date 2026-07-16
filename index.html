@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Liam's PECS</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="topbar"><h1>Liam's PECS</h1></div>
+<div class="wrap">
+  <p class="hint">Tap a tile to open it. More tiles will be added over time.</p>
+  <div class="tiles">
+
+    <a class="tile" href="library.html">
+      <div class="ic">🗂️</div>
+      <h2>Card Library</h2>
+      <p>Browse and search every PECS card by category.</p>
+    </a>
+
+    <a class="tile" href="maker.html">
+      <div class="ic">➕</div>
+      <h2>Make a PEC</h2>
+      <p>Add a picture and a label to create a new card. Saved on this tablet.</p>
+    </a>
+
+    <a class="tile" href="print.html">
+      <div class="ic">🖨️</div>
+      <h2>Print Cards</h2>
+      <p>Pick cards, choose size and options, print a sheet to cut out.</p>
+    </a>
+
+    <a class="tile disabled" href="board.html">
+      <div class="ic">💬</div>
+      <h2>Talk / Communicate</h2>
+      <p>A board Liam can use to build and speak a sentence.</p>
+      <span class="soon">Coming soon</span>
+    </a>
+
+  </div>
+  <p class="hint" style="margin-top:22px" id="stat">Loading…</p>
+</div>
+<script src="cards.js"></script>
+<script src="cardgen.js"></script>
+<script>
+getAllCards().then(cs=>{
+  const u=cs.filter(c=>c.kind==="user").length;
+  document.getElementById("stat").textContent =
+    cs.length + " cards available (" + (cs.length-u) + " built-in" + (u?(" + "+u+" you made"):"") + ").";
+});
+</script>
+</body>
+</html>

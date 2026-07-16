@@ -1,0 +1,39 @@
+LIAM'S PECS — HOW TO USE
+========================
+
+WHAT THIS IS
+A small offline website. No internet needed. It has a home page with tiles:
+  • Card Library   – browse and search every PECS card
+  • Make a PEC     – add a picture + label to create a new card
+  • Print Cards    – pick cards, choose size, print a sheet to cut out
+  • Talk / Communicate – (coming soon)
+
+PUT IT ON THE ANDROID TABLET
+1. Unzip this folder somewhere on the tablet (e.g. Downloads).
+   Keep everything together — the "PECS_Library" folder must stay next to the .html files.
+2. Open the Chrome app.
+3. In Chrome's address bar type:  file:///sdcard/Download/LiamHub/index.html
+   (the exact path depends where you unzipped it; a file-manager app can also
+   "Open with → Chrome" on index.html).
+4. Tap the ⋮ menu → "Add to Home screen" so it opens like an app.
+
+Tip: Chrome is recommended. Some other browsers block local files or saving.
+
+MAKING A CARD (Make a PEC)
+- Pick a picture (or take a photo), type the label, choose a category.
+- The preview shows the finished card in the same style as the others.
+- Tap "Save to my library". It's stored ON THIS TABLET and appears in the
+  Library and Print pages straight away.
+- "Export my cards (backup)" saves a file you can send to be added to the
+  master set, or kept as a backup.
+
+PRINTING
+- Default card size is 5 cm; change it with the Size box.
+- "Black border" is on by default; "Show label" can be turned on or off.
+- Tap cards to add them to the sheet, then "Print / Save PDF".
+  On Android choose the printer OR "Save as PDF".
+
+NOTES
+- Cards you make live on this tablet's browser storage. Clearing Chrome's site
+  data would remove them, so use "Export my cards" now and then as a backup.
+- Everything works offline.

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Make a PEC</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.maker{display:grid;grid-template-columns:1fr 320px;gap:18px}
+@media(max-width:760px){.maker{grid-template-columns:1fr}}
+#preview{background:#e9eef0;border-radius:14px;display:flex;align-items:center;justify-content:center;min-height:340px;padding:16px}
+#preview canvas{max-width:320px;width:100%;height:auto;filter:drop-shadow(0 3px 8px rgba(0,0,0,.18))}
+.drop{border:2.5px dashed #a9bcc3;border-radius:12px;padding:22px;text-align:center;color:#5a6b73}
+.ok{background:#e7f3ec;color:#1c6b3d;border-radius:10px;padding:12px 14px;font-weight:600;display:none;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="topbar"><a class="back" href="index.html">‹</a><h1>Make a PEC</h1></div>
+<div class="wrap">
+  <div class="maker">
+    <div>
+      <div class="panel">
+        <label class="fld">1. Picture
+          <input type="file" id="file" accept="image/*" capture="environment">
+        </label>
+        <p class="hint">Choose a photo or take one with the camera.</p>
+      </div>
+      <div class="panel">
+        <label class="fld">2. Label (word under the picture)
+          <input type="text" id="label" placeholder="e.g. banana" maxlength="40">
+        </label>
+        <label class="fld" style="margin-top:12px">3. Category
+          <select id="cat"></select>
+        </label>
+        <div id="newcatwrap" style="display:none;margin-top:10px">
+          <input type="text" id="newcat" placeholder="New category name" style="width:100%">
+        </div>
+      </div>
+      <div class="panel">
+        <div class="row">
+          <label class="toggle"><input type="checkbox" id="tBorder" checked> Black border</label>
+          <label class="toggle"><input type="checkbox" id="tLabel" checked> Show label</label>
+        </div>
+        <p class="hint">These control the preview. Every version (with/without border and label) is saved so you can pick any of them later.</p>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div id="preview"><div class="drop">Your card preview appears here</div></div>
+        <button class="btn" id="save" style="width:100%;margin-top:14px" disabled>Save to my library</button>
+        <div class="ok" id="ok">Saved on this tablet ✓</div>
+        <div class="row" style="margin-top:12px">
+          <a class="btn sec" href="print.html">Go to Print</a>
+          <button class="btn sec" id="export">Export my cards (backup)</button>
+        </div>
+      </div>
+      <p class="hint">Cards you make are stored on this tablet and appear in the Library and Print pages straight away.</p>
+    </div>
+  </div>
+</div>
+
+<script src="cards.js"></script>
+<script src="cardgen.js"></script>
+<script>
+let photoImg=null, photoData=null;
+const $=id=>document.getElementById(id);
+
+(function initCats(){
+  const sel=$("cat");
+  (window.PECS_CATEGORIES||[]).forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;sel.appendChild(o);});
+  const o=document.createElement("option");o.value="__new__";o.textContent="+ New category…";sel.appendChild(o);
+  sel.value="Food & Drink";
+  sel.onchange=()=>{ $("newcatwrap").style.display = sel.value==="__new__"?"block":"none"; };
+})();
+
+$("file").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ photoData=r.result; loadImage(photoData).then(im=>{photoImg=im; draw();}); };
+  r.readAsDataURL(f);
+});
+["label","tBorder","tLabel"].forEach(id=>$(id).addEventListener("input",draw));
+
+function draw(){
+  if(!photoImg){return;}
+  const cv=renderCard(photoImg, $("label").value.trim(), {border:$("tBorder").checked, showLabel:$("tLabel").checked, size:520});
+  const p=$("preview"); p.innerHTML=""; p.appendChild(cv);
+  $("save").disabled = !( $("label").value.trim() || !$("tLabel").checked );
+}
+
+$("save").addEventListener("click",async()=>{
+  let cat=$("cat").value;
+  if(cat==="__new__"){ cat=$("newcat").value.trim()||"My cards"; }
+  const label=$("label").value.trim();
+  if(!label && $("tLabel").checked){ alert("Please add a label (or turn the label off)."); return; }
+  try{
+    await addUserCard({label:label||"(no label)", category:cat, photo:photoData, createdAt:Date.now()});
+  }catch(err){
+    alert("Could not save on this device. If you opened the page from a file, try opening it in Chrome. ("+err+")");
+    return;
+  }
+  $("ok").style.display="block";
+  setTimeout(()=>$("ok").style.display="none",2500);
+  // reset for next
+  photoImg=null; photoData=null; $("file").value=""; $("label").value="";
+  $("preview").innerHTML="<div class='drop'>Saved! Add another, or open the Library / Print pages.</div>";
+  $("save").disabled=true;
+});
+
+$("export").addEventListener("click",async()=>{
+  const cards=await getUserCards();
+  if(!cards.length){ alert("You haven't made any cards yet."); return; }
+  const blob=new Blob([JSON.stringify(cards,null,1)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="liam_new_cards_backup.json";
+  a.click();
+});
+</script>
+</body>
+</html>
